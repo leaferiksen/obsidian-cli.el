@@ -42,7 +42,7 @@
   :doc "Local keymap for `obsidian-cli-mode'.")
 
 (defcustom obsidian-cli-vault
-  (string-trim (shell-command-to-string "obsidian vault info=path"))
+  (file-name-as-directory (string-trim (shell-command-to-string "obsidian vault info=path")))
   "Path to the Obsidian vault directory. Refreshes every time
 obsidian-cli.el is loaded"
   :type 'directory
@@ -59,7 +59,7 @@ obsidian-cli.el is loaded"
     (shell-command (format "obsidian rename file=%s name=%s"
                            (shell-quote-argument (file-name-nondirectory path))
                            (shell-quote-argument new)))
-    (set-visited-file-name (concat obsidian-cli-vault new ".md") t t)
+    (set-visited-file-name (expand-file-name (concat new ".md") obsidian-cli-vault) t t)
     (set-buffer-modified-p nil)))
 
 (defun obsidian-cli-jump-to-backlink ()
@@ -71,7 +71,7 @@ obsidian-cli.el is loaded"
                               (shell-quote-argument (file-name-nondirectory path)))))
               (links (split-string (string-trim raw) "\n" t))
               (pick  (completing-read "Backlink: " links nil t)))
-    (find-file (concat obsidian-cli-vault pick ".md"))))
+    (find-file (expand-file-name (concat pick ".md") obsidian-cli-vault))))
 
 ;;;###autoload
 
@@ -90,8 +90,7 @@ obsidian-cli.el is loaded"
   :group 'obsidian-cli
   :keymap obsidian-cli-mode-map
   :lighter " ObsCLI"
-  (if obsidian-cli-mode
-      (add-hook 'after-save-hook #'obsidian-cli-update-title nil t)
+  (if obsidian-cli-mode (add-hook 'after-save-hook #'obsidian-cli-update-title nil t)
     (remove-hook 'after-save-hook #'obsidian-cli-update-title t)))
 
 (provide 'obsidian-cli)
