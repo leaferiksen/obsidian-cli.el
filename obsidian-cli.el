@@ -49,6 +49,8 @@ obsidian-cli.el is loaded"
   :group 'obsidian-cli)
 
 (defun obsidian-cli-update-title ()
+  "If a level one heading is found, automatically rename the file to match,
+repair any [[wikilinks]] to the file, and jump the user to the new file"
   (when-let* ((path (buffer-file-name))
               (_    (string-prefix-p obsidian-cli-vault path))
               (new  (save-excursion
@@ -63,6 +65,7 @@ obsidian-cli.el is loaded"
     (set-buffer-modified-p nil)))
 
 (defun obsidian-cli-jump-to-backlink ()
+  "Jump to a backlink of the current file."
   (interactive)
   (when-let* ((path  (buffer-file-name))
               (_     (string-prefix-p obsidian-cli-vault path))
@@ -70,8 +73,10 @@ obsidian-cli.el is loaded"
                       (format "obsidian backlinks file=%s"
                               (shell-quote-argument (file-name-nondirectory path)))))
               (links (split-string (string-trim raw) "\n" t))
-              (pick  (completing-read "Backlink: " links nil t)))
-    (find-file (expand-file-name (concat pick ".md") obsidian-cli-vault))))
+              (pick  (pcase links
+                       (`(,only) only)
+                       (_ (completing-read "Backlink: " links nil t)))))
+    (find-file (expand-file-name pick obsidian-cli-vault))))
 
 ;;;###autoload
 
