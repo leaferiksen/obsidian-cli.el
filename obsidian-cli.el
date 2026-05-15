@@ -1,4 +1,4 @@
-;;; obsidian-cli.el --- Obisidian CLI interface -*- lexical-binding: t; -*-
+;;; obsidian-cli.el --- Obsidian CLI interface -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026  Leaf Eriksen
 
@@ -33,7 +33,7 @@
 ;;; Code:
 
 (defgroup obsidian-cli nil
-  "Obisidian CLI interface."
+  "Obsidian CLI interface."
   :prefix "obsidian-cli-"
   :group 'external)
 
