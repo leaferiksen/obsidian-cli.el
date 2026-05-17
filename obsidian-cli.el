@@ -4,6 +4,7 @@
 
 ;; Author: Leaf Eriksen <leaferiksen@gmail.com>
 ;; Keywords: convenience, tools
+;; Package-Requires: ((emacs "30.1"))
 ;; URL: https://github.com/leaferiksen/obsidian-cli.el
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -31,8 +32,6 @@
 ;; and "Sync mode" to "Filename + Heading"
 
 ;;; Code:
-
-(require 'subr-x)
 
 (defgroup obsidian-cli nil
   "Obsidian CLI interface."
@@ -85,18 +84,18 @@ repair any [[wikilinks]] to the file, and jump the user to the new file"
 (defun obsidian-cli-daily-note ()
   "Open today's daily note."
   (interactive)
-  (let* ((raw (shell-command-to-string "obsidian daily:path"))
-         (path (string-trim raw)))
-    (if (string= path "")
-        (message "Obsidian: No daily note path returned")
-      (find-file (expand-file-name path obsidian-cli-vault)))))
+  (if-let* ((raw (shell-command-to-string "obsidian daily:path"))
+            (path (string-trim raw))
+            ((not (string= path ""))))
+      (find-file (expand-file-name path obsidian-cli-vault))
+    (user-error "Obsidian: No daily note path returned")))
 
 (define-minor-mode obsidian-cli-mode
   "Toggle Obsidian CLI integration."
   :init-value nil
   :group 'obsidian-cli
   :keymap obsidian-cli-mode-map
-  :lighter " ObsCLI"
+  :lighter " OCLI"
   (if obsidian-cli-mode (add-hook 'after-save-hook #'obsidian-cli-update-title nil t)
     (remove-hook 'after-save-hook #'obsidian-cli-update-title t)))
 
