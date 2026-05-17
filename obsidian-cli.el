@@ -33,69 +33,65 @@
 
 ;;; Code:
 
-(defgroup obsidian-cli nil
-  "Obsidian CLI interface."
-  :prefix "obsidian-cli-"
-  :group 'external)
+(defun obsidian-cli--call (&rest args)
+  "Call obsidian with ARGS and return the output string.
+Signal an error if the command fails or returns a `not running' message."
+  (with-temp-buffer
+    (let ((exit-code (apply #'call-process "obsidian" nil t nil args)))
+      (let ((output (string-trim (buffer-string))))
+        (if (not (zerop exit-code))
+            (user-error "Obsidian: %s" (if (string= output "") "Command failed" output))
+          output)))))
 
-(defvar-keymap obsidian-cli-mode-map
-  :parent text-mode-map
-  :doc "Local keymap for `obsidian-cli-mode'.")
-
-(defcustom obsidian-cli-vault
-  (file-name-as-directory (string-trim (shell-command-to-string "obsidian vault info=path")))
-  "Path to the Obsidian vault directory. Refreshes every time
-obsidian-cli.el is loaded"
-  :type 'directory
-  :group 'obsidian-cli)
+(defun obsidian-cli--vault ()
+  "Return the vault path from the CLI."
+  (file-name-as-directory (obsidian-cli--call "vault" "info=path")))
 
 (defun obsidian-cli-update-title ()
   "If a level one heading is found, automatically rename the file to match,
 repair any [[wikilinks]] to the file, and jump the user to the new file"
-  (when-let* ((path (buffer-file-name))
-              (_    (string-prefix-p obsidian-cli-vault path))
-              (new  (save-excursion
-                      (goto-char (point-min))
-                      (when (re-search-forward "^# \\(.+\\)$" nil t)
-                        (match-string 1))))
-              (_    (not (string= (file-name-base path) new))))
-    (shell-command (format "obsidian rename file=%s name=%s"
-                           (shell-quote-argument (file-name-nondirectory path))
-                           (shell-quote-argument new)))
-    (set-visited-file-name (expand-file-name (concat new ".md") obsidian-cli-vault) t t)
+  (when-let* ((path  (buffer-file-name))
+              (vault (obsidian-cli--vault))
+              (_     (string-prefix-p vault path))
+              (new   (save-excursion
+                       (goto-char (point-min))
+                       (when (re-search-forward "^# \\(.+\\)$" nil t)
+                         (match-string 1))))
+              (_     (not (string= (file-name-base path) new))))
+    (obsidian-cli--call "rename"
+                        (format "file=%s" (file-name-nondirectory path))
+                        (format "name=%s" new))
+    (set-visited-file-name (expand-file-name (concat new ".md") vault) t t)
     (set-buffer-modified-p nil)))
 
 (defun obsidian-cli-jump-to-backlink ()
   "Jump to a backlink of the current file."
   (interactive)
-  (when-let* ((path  (buffer-file-name))
-              (_     (string-prefix-p obsidian-cli-vault path))
-              (raw   (shell-command-to-string
-                      (format "obsidian backlinks file=%s"
-                              (shell-quote-argument (file-name-nondirectory path)))))
-              (links (split-string (string-trim raw) "\n" t))
+  (when-let* ((vault (obsidian-cli--vault))
+              (path  (buffer-file-name))
+              (_     (string-prefix-p vault path))
+              (raw   (obsidian-cli--call "backlinks"
+                                         (format "file=%s" (file-name-nondirectory path))))
+              (links (split-string raw "\n" t))
               (pick  (pcase links
                        (`(,only) only)
                        (_ (completing-read "Backlink: " links nil t)))))
-    (find-file (expand-file-name pick obsidian-cli-vault))))
+    (find-file (expand-file-name pick vault))))
 
 ;;;###autoload
 
 (defun obsidian-cli-daily-note ()
   "Open today's daily note."
   (interactive)
-  (if-let* ((raw (shell-command-to-string "obsidian daily:path"))
-            (path (string-trim raw))
-            ((not (string= path ""))))
-      (find-file (expand-file-name path obsidian-cli-vault))
-    (user-error "Obsidian: No daily note path returned")))
+  (let ((vault (obsidian-cli--vault))
+        (path  (obsidian-cli--call "daily:path")))
+    (find-file (expand-file-name path vault))))
 
 (define-minor-mode obsidian-cli-mode
   "Toggle Obsidian CLI integration."
   :init-value nil
-  :group 'obsidian-cli
-  :keymap obsidian-cli-mode-map
   :lighter " OCLI"
+  :keymap (make-sparse-keymap)
   (if obsidian-cli-mode (add-hook 'after-save-hook #'obsidian-cli-update-title nil t)
     (remove-hook 'after-save-hook #'obsidian-cli-update-title t)))
 
