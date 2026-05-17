@@ -32,6 +32,8 @@
 
 ;;; Code:
 
+(require 'subr-x)
+
 (defgroup obsidian-cli nil
   "Obsidian CLI interface."
   :prefix "obsidian-cli-"
