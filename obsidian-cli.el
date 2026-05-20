@@ -33,14 +33,28 @@
 
 ;;; Code:
 
+(defgroup obsidian-cli nil
+  "Obsidian CLI interface."
+  :group 'external
+  :prefix "obsidian-cli-")
+
+(defcustom obsidian-cli-rename-on-save nil
+  "Whether to automatically rename the file to match the first H1 on save."
+  :type 'boolean
+  :group 'obsidian-cli)
+
 (defun obsidian-cli--call (&rest args)
   "Call obsidian with ARGS and return the output string.
 Signal an error if the command fails or returns a `not running' message."
   (with-temp-buffer
-    (let ((exit-code (apply #'call-process "obsidian" nil t nil args)))
+    (let ((exit-code
+           (apply #'call-process "obsidian" nil t nil args)))
       (let ((output (string-trim (buffer-string))))
         (if (not (zerop exit-code))
-            (user-error "Obsidian: %s" (if (string= output "") "Command failed" output))
+            (user-error "Obsidian: %s"
+                        (if (string= output "")
+                            "Command failed"
+                          output))
           output)))))
 
 (defun obsidian-cli--vault ()
@@ -50,32 +64,41 @@ Signal an error if the command fails or returns a `not running' message."
 (defun obsidian-cli-update-title ()
   "If a level one heading is found, automatically rename the file to match,
 repair any [[wikilinks]] to the file, and jump the user to the new file"
-  (when-let* ((path  (buffer-file-name))
+  (when-let* ((_ obsidian-cli-rename-on-save)
+              (path (buffer-file-name))
               (vault (obsidian-cli--vault))
-              (_     (string-prefix-p vault path))
-              (new   (save-excursion
-                       (goto-char (point-min))
-                       (when (re-search-forward "^# \\(.+\\)$" nil t)
-                         (match-string 1))))
-              (_     (not (string= (file-name-base path) new))))
-    (obsidian-cli--call "rename"
-                        (format "file=%s" (file-name-nondirectory path))
-                        (format "name=%s" new))
-    (set-visited-file-name (expand-file-name (concat new ".md") vault) t t)
+              ((string-prefix-p vault path))
+              (new
+               (save-excursion
+                 (goto-char (point-min))
+                 (when (re-search-forward "^# \\(.+\\)$" nil t)
+                   (match-string 1))))
+              (_ (not (string= (file-name-base path) new))))
+    (obsidian-cli--call
+     "rename"
+     (format "file=%s"
+             (file-name-nondirectory path))
+     (format "name=%s" new))
+    (set-visited-file-name (expand-file-name (concat new ".md") vault)
+                           t
+                           t)
     (set-buffer-modified-p nil)))
 
 (defun obsidian-cli-jump-to-backlink ()
   "Jump to a backlink of the current file."
   (interactive)
   (when-let* ((vault (obsidian-cli--vault))
-              (path  (buffer-file-name))
-              (_     (string-prefix-p vault path))
-              (raw   (obsidian-cli--call "backlinks"
-                                         (format "file=%s" (file-name-nondirectory path))))
+              (path (buffer-file-name))
+              ((string-prefix-p vault path))
+              (raw
+               (obsidian-cli--call
+                "backlinks"
+                (format "file=%s" (file-name-nondirectory path))))
               (links (split-string raw "\n" t))
-              (pick  (pcase links
-                       (`(,only) only)
-                       (_ (completing-read "Backlink: " links nil t)))))
+              (pick
+               (pcase links
+                 (`(,only) only)
+                 (_ (completing-read "Backlink: " links nil t)))))
     (find-file (expand-file-name pick vault))))
 
 ;;;###autoload
@@ -84,15 +107,18 @@ repair any [[wikilinks]] to the file, and jump the user to the new file"
   "Open today's daily note."
   (interactive)
   (let ((vault (obsidian-cli--vault))
-        (path  (obsidian-cli--call "daily:path")))
+        (path (obsidian-cli--call "daily:path")))
     (find-file (expand-file-name path vault))))
 
 (define-minor-mode obsidian-cli-mode
   "Toggle Obsidian CLI integration."
   :init-value nil
   :lighter " OCLI"
-  :keymap (make-sparse-keymap)
-  (if obsidian-cli-mode (add-hook 'after-save-hook #'obsidian-cli-update-title nil t)
+  :group 'obsidian-cli
+  :keymap
+  (make-sparse-keymap)
+  (if obsidian-cli-mode
+      (add-hook 'after-save-hook #'obsidian-cli-update-title nil t)
     (remove-hook 'after-save-hook #'obsidian-cli-update-title t)))
 
 (provide 'obsidian-cli)
