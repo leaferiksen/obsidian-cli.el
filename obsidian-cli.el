@@ -39,7 +39,8 @@
   :prefix "obsidian-cli-")
 
 (defcustom obsidian-cli-rename-on-save nil
-  "Whether to automatically rename the file to match the first H1 on save."
+  "Whether to automatically rename the file to match the first H1 on save.
+Obsidian CLI will update all [[wikilinks]] to the file at the same time."
   :type 'boolean
   :group 'obsidian-cli)
 
@@ -47,33 +48,40 @@
   "Call obsidian with ARGS and return the output string.
 Signal an error if the command fails or returns a `not running' message."
   (with-temp-buffer
-    (let ((exit-code
-           (apply #'call-process "obsidian" nil t nil args)))
-      (let ((output (string-trim (buffer-string))))
-        (if (not (zerop exit-code))
-            (user-error "Obsidian: %s"
-                        (if (string= output "")
-                            "Command failed"
-                          output))
-          output)))))
+    (let* ((exit-code
+            (apply #'call-process "obsidian" nil t nil args))
+           (output (string-trim (buffer-string))))
+      (if (zerop exit-code)
+          output
+        (user-error "Obsidian: %s"
+                    (if (string= output "")
+                        "Command failed"
+                      output))))))
 
 (defun obsidian-cli--vault ()
   "Return the vault path from the CLI."
   (file-name-as-directory (obsidian-cli--call "vault" "info=path")))
 
-(defun obsidian-cli-update-title ()
-  "If a level one heading is found, automatically rename the file to match,
+(defun obsidian-cli-open-daily-note ()
+  "Open today's daily note."
+  (interactive)
+  (let ((vault (obsidian-cli--vault))
+        (path (obsidian-cli--call "daily:path")))
+    (find-file (expand-file-name path vault))))
+
+(defun obsidian-cli-rename-file ()
+  "Use Obsidian to rename file if a level one heading is found.
 repair any [[wikilinks]] to the file, and jump the user to the new file"
-  (when-let* ((_ obsidian-cli-rename-on-save)
+  (when-let* (obsidian-cli-rename-on-save
               (path (buffer-file-name))
               (vault (obsidian-cli--vault))
               ((string-prefix-p vault path))
               (new
                (save-excursion
                  (goto-char (point-min))
-                 (when (re-search-forward "^# \\(.+\\)$" nil t)
-                   (match-string 1))))
-              (_ (not (string= (file-name-base path) new))))
+                 (and (re-search-forward "^# \\(.+\\)$" nil t)
+                      (match-string 1))))
+              ((not (string= (file-name-base path) new))))
     (obsidian-cli--call
      "rename"
      (format "file=%s"
@@ -103,13 +111,6 @@ repair any [[wikilinks]] to the file, and jump the user to the new file"
 
 ;;;###autoload
 
-(defun obsidian-cli-daily-note ()
-  "Open today's daily note."
-  (interactive)
-  (let ((vault (obsidian-cli--vault))
-        (path (obsidian-cli--call "daily:path")))
-    (find-file (expand-file-name path vault))))
-
 (define-minor-mode obsidian-cli-mode
   "Toggle Obsidian CLI integration."
   :init-value nil
@@ -118,8 +119,8 @@ repair any [[wikilinks]] to the file, and jump the user to the new file"
   :keymap
   (make-sparse-keymap)
   (if obsidian-cli-mode
-      (add-hook 'after-save-hook #'obsidian-cli-update-title nil t)
-    (remove-hook 'after-save-hook #'obsidian-cli-update-title t)))
+      (add-hook 'after-save-hook #'obsidian-cli-rename-file nil t)
+    (remove-hook 'after-save-hook #'obsidian-cli-rename-file t)))
 
 (provide 'obsidian-cli)
 ;;; obsidian-cli.el ends here
