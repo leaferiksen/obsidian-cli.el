@@ -23,33 +23,7 @@
 ;;; Commentary:
 
 ;; Obsidian CLI is an Emacs Lisp package which allows you to access
-;; the superpowers of Obsidian Desktop via the app's included CLI. It
-;; only implements features that the CLI provides, and does not
-;; directly read from potentially unstable data formats like
-;; Obsidian's preference files. This should ensure that the continued
-;; maintenence of this package is managable for many years to to come,
-;; so long as I remain in good health.
-
-;; The CLI only provides the path to the vault that is currently open.
-;; If multiple vaults are open at once, the CLI only sees the path of
-;; the first vault that was opened. If multi-vault path support is
-;; added to the CLI, please tell me about it, because I would be happy
-;; to support the feature, even though I don't need it.
-
-;; Obsidian must be running for the CLI to work. If you run Obsidian at
-;; login but don't want to deal with hiding it, you can automatically
-;; hide Obsidian once it is done launching using the "Javascript Init"
-;; plugin to run "electronWindow.minimize()".
-
-;; If you want Obsidian to replicate the `obsidian-cli-update-title'
-;; function, I found that the plugin "File Title Updater" did the
-;; trick, once I set the "Default title source" set to "First Heading"
-;; and "Sync mode" to "Filename + Heading".
-
-;; As I use both of these this plugins personally, I will try to
-;; update these guidelines as Obsidian plugins come and go. If you
-;; know of solutions that do no require plugins, and are still
-;; cross-platform, please tell me about them.
+;; the superpowers of Obsidian via the app's included CLI.
 
 ;;; Code:
 
