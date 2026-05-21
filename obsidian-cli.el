@@ -91,6 +91,15 @@ Obsidian, but the template cannot currently be automatically added."
         (path (obsidian-cli--call "daily:path")))
     (find-file (expand-file-name path vault))))
 
+(defun obsidian-cli-open-note ()
+  "Open a note from the Obsidian vault."
+  (interactive)
+  (let* ((vault (obsidian-cli--vault))
+         (files
+          (split-string (obsidian-cli--call "files" "ext=md") "\n" t))
+         (pick (completing-read "Open note: " files nil t)))
+    (find-file (expand-file-name pick vault))))
+
 (defun obsidian-cli-rename-file ()
   "Use Obsidian to rename file if a level one heading is found.
 repair any [[wikilinks]] to the file, and jump the user to the new file"
