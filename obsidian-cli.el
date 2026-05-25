@@ -1,4 +1,4 @@
-;;; obsidian-cli.el --- Obsidian CLI interface -*- lexical-binding: t; -*-
+;;; obsidian-cli.el --- Obsidian CLI interface -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2026  Leaf Eriksen
 
