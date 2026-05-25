@@ -22,8 +22,8 @@
 
 ;;; Commentary:
 
-;; Obsidian CLI is an Emacs Lisp package which allows you to access
-;; the superpowers of Obsidian via the app's included CLI.
+;; Obsidian CLI is an Emacs Lisp package which allows you to access the
+;; superpowers of Obsidian via the app's included CLI.
 
 ;;; Code:
 
@@ -42,8 +42,7 @@ Obsidian CLI will update all [[wikilinks]] to the file at the same time."
   "Call obsidian with ARGS and return the output string.
 Signal an error if the command fails or returns a `not running' message."
   (with-temp-buffer
-    (let* ((exit-code
-            (apply #'call-process "obsidian" nil t nil args))
+    (let* ((exit-code (apply #'call-process "obsidian" nil t nil args))
            (output (string-trim (buffer-string))))
       (if (zerop exit-code)
           output
@@ -69,8 +68,7 @@ Obsidian, but the template cannot currently be automatically added."
   "Open a note from the Obsidian vault."
   (interactive)
   (let* ((vault (obsidian-cli--vault))
-         (files
-          (split-string (obsidian-cli--call "files" "ext=md") "\n" t))
+         (files (split-string (obsidian-cli--call "files" "ext=md") "\n" t))
          (pick (completing-read "Open note: " files nil t)))
     (find-file (expand-file-name pick vault))))
 
@@ -89,12 +87,9 @@ repair any [[wikilinks]] to the file, and jump the user to the new file"
               ((not (string= (file-name-base path) new))))
     (obsidian-cli--call
      "rename"
-     (format "file=%s"
-             (file-name-nondirectory path))
+     (format "file=%s" (file-name-nondirectory path))
      (format "name=%s" new))
-    (set-visited-file-name (expand-file-name (concat new ".md") vault)
-                           t
-                           t)
+    (set-visited-file-name (expand-file-name (concat new ".md") vault) t t)
     (set-buffer-modified-p nil)))
 
 (defun obsidian-cli-jump-to-backlink ()
@@ -105,8 +100,7 @@ repair any [[wikilinks]] to the file, and jump the user to the new file"
               ((string-prefix-p vault path))
               (raw
                (obsidian-cli--call
-                "backlinks"
-                (format "file=%s" (file-name-nondirectory path))))
+                "backlinks" (format "file=%s" (file-name-nondirectory path))))
               (links (split-string raw "\n" t))
               (pick
                (pcase links
@@ -129,3 +123,8 @@ repair any [[wikilinks]] to the file, and jump the user to the new file"
 
 (provide 'obsidian-cli)
 ;;; obsidian-cli.el ends here
+
+;; Local variables:
+;; fill-column: 80
+;; elisp-autofmt-on-save-p: always
+;; end:

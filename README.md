@@ -1,13 +1,15 @@
 # Emacs Obsidian CLI
 
-Access the power of the Obsidian CLI from within Emacs!
+Access the power of the Obsidian CLI from within GNU Emacs!
 
 Here is how I install it:
 
 ```elisp
+(setopt use-package-vc-prefer-newest t)
+
 (use-package obsidian-cli
   :ensure t
-  :vc (:url "git@github.com:leaferiksen/obsidian-cli.el.git")
+  :vc (:url "https://github.com/leaferiksen/obsidian-cli.el")
   :hook (markdown-ts-mode md-ts-mode)
   :bind
   ("C-c o" . obsidian-cli-open-note)
