@@ -15,7 +15,9 @@ Here is how I install it:
   ("C-c o" . obsidian-cli-open-note)
   ("C-c j" . obsidian-cli-open-daily-note)
   (:map obsidian-cli-mode-map ("C-c C-b" . obsidian-cli-jump-to-backlink))
-  :custom (obsidian-cli-rename-on-save t))
+  :custom
+  (obsidian-cli-note-extensions '("md" "tsv"))
+  (obsidian-cli-rename-on-save t))
 ```
 
 The CLI only provides the path to the vault that is currently open. If multiple vaults are open at once, the CLI only sees the path of the first vault that was opened. If multi-vault path support is added to the CLI, please tell me about it, because I would be happy to support the feature, even though I don't need it.

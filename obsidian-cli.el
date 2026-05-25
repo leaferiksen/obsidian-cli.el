@@ -32,9 +32,13 @@
   :group 'external
   :prefix "obsidian-cli-")
 
+(defcustom obsidian-cli-note-extensions '("md")
+  "List of file extensions to show in the note selection menu."
+  :type '(repeat string)
+  :group 'obsidian-cli)
+
 (defcustom obsidian-cli-rename-on-save nil
-  "Whether to automatically rename the file to match the first H1 on save.
-Obsidian CLI will update all [[wikilinks]] to the file at the same time."
+  "Non-nil means run `obsidian-cli-rename-file' after saving files."
   :type 'boolean
   :group 'obsidian-cli)
 
@@ -57,38 +61,42 @@ Signal an error if the command fails or returns a `not running' message."
 
 (defun obsidian-cli-open-daily-note ()
   "Open today's daily note.
-The parent directory and date format are derived from the preferences set in
-Obsidian, but the template cannot currently be automatically added."
+The parent directory and date format are derived from the preferences
+set in Obsidian, but the template cannot currently be automatically
+added."
   (interactive)
   (let ((vault (obsidian-cli--vault))
         (path (obsidian-cli--call "daily:path")))
     (find-file (expand-file-name path vault))))
 
 (defun obsidian-cli-open-note ()
-  "Open a note from the Obsidian vault."
+  "Open a file from the Obsidian vault.
+The list of included file types is `obsidian-cli-note-extensions'"
   (interactive)
   (let* ((vault (obsidian-cli--vault))
-         (files (split-string (obsidian-cli--call "files" "ext=md") "\n" t))
+         (files
+          (let (acc)
+            (dolist (ext obsidian-cli-note-extensions)
+              (setq acc (nconc acc (split-string (obsidian-cli--call "files" (format "ext=%s" ext)) "\n" t))))
+            acc))
          (pick (completing-read "Open note: " files nil t)))
     (find-file (expand-file-name pick vault))))
 
 (defun obsidian-cli-rename-file ()
-  "Use Obsidian to rename file if a level one heading is found.
-repair any [[wikilinks]] to the file, and jump the user to the new file"
+  "Rename a .md file in the vault, if a level one heading is found.
+Additionally, repair any [[wikilinks]] to the file, and navigate the
+user to the new file"
   (when-let* (obsidian-cli-rename-on-save
               (path (buffer-file-name))
+              ((string-suffix-p ".md" path))
               (vault (obsidian-cli--vault))
               ((string-prefix-p vault path))
               (new
                (save-excursion
                  (goto-char (point-min))
-                 (and (re-search-forward "^# \\(.+\\)$" nil t)
-                      (match-string 1))))
+                 (and (re-search-forward "^# \\(.+\\)$" nil t) (match-string 1))))
               ((not (string= (file-name-base path) new))))
-    (obsidian-cli--call
-     "rename"
-     (format "file=%s" (file-name-nondirectory path))
-     (format "name=%s" new))
+    (obsidian-cli--call "rename" (format "file=%s" (file-name-nondirectory path)) (format "name=%s" new))
     (set-visited-file-name (expand-file-name (concat new ".md") vault) t t)
     (set-buffer-modified-p nil)))
 
@@ -98,9 +106,7 @@ repair any [[wikilinks]] to the file, and jump the user to the new file"
   (when-let* ((vault (obsidian-cli--vault))
               (path (buffer-file-name))
               ((string-prefix-p vault path))
-              (raw
-               (obsidian-cli--call
-                "backlinks" (format "file=%s" (file-name-nondirectory path))))
+              (raw (obsidian-cli--call "backlinks" (format "file=%s" (file-name-nondirectory path))))
               (links (split-string raw "\n" t))
               (pick
                (pcase links
@@ -125,6 +131,6 @@ repair any [[wikilinks]] to the file, and jump the user to the new file"
 ;;; obsidian-cli.el ends here
 
 ;; Local variables:
-;; fill-column: 80
+;; fill-column: 1000
 ;; elisp-autofmt-on-save-p: always
 ;; end:
