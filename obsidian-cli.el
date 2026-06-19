@@ -121,8 +121,8 @@ user to the new file"
   :init-value nil
   :lighter " OCLI"
   :group 'obsidian-cli
-  :keymap
-  (make-sparse-keymap)
+  :keymap (make-sparse-keymap)
+
   (if obsidian-cli-mode
       (add-hook 'after-save-hook #'obsidian-cli-rename-file nil t)
     (remove-hook 'after-save-hook #'obsidian-cli-rename-file t)))
@@ -132,5 +132,4 @@ user to the new file"
 
 ;; Local variables:
 ;; fill-column: 1000
-;; elisp-autofmt-on-save-p: always
 ;; end:
