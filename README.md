@@ -12,7 +12,7 @@ Here is how I install it:
   :vc (:url "https://github.com/leaferiksen/obsidian-cli.el")
   :hook (markdown-ts-mode)
   :bind
-  (:prefix "C-c o" :prefix-map vault-actions
+  (:prefix "C-c o" :prefix-map obsidian-cli-actions
 	   ("s" . obsidian-cli-search-notes)
 	   ("d" . obsidian-cli-open-daily-note)
 	   ("z" . obsidian-cli-zip-vault)
