@@ -42,6 +42,11 @@
   :type 'boolean
   :group 'obsidian-cli)
 
+(defcustom obsidian-cli-backup-directory "~/Notes Backup/"
+  "Directory where `obsidian-cli-backup-vault' writes dated archives."
+  :type 'directory
+  :group 'obsidian-cli)
+
 (defun obsidian-cli--call (&rest args)
   "Call obsidian with ARGS and return the output string.
 Signal an error if the command fails or returns a `not running' message."
@@ -69,7 +74,7 @@ added."
         (path (obsidian-cli--call "daily:path")))
     (find-file (expand-file-name path vault))))
 
-(defun obsidian-cli-open-note ()
+(defun obsidian-cli-search-notes ()
   "Open a file from the Obsidian vault.
 The list of included file types is `obsidian-cli-note-extensions'"
   (interactive)
@@ -99,6 +104,26 @@ user to the new file"
     (obsidian-cli--call "rename" (format "file=%s" (file-name-nondirectory path)) (format "name=%s" new))
     (set-visited-file-name (expand-file-name (concat new ".md") vault) t t)
     (set-buffer-modified-p nil)))
+
+(defun obsidian-cli-zip-vault ()
+  "Zip the Obsidian vault into a dated archive in `obsidian-cli-backup-directory'."
+  (interactive)
+  (when-let* ((dest (file-name-as-directory (expand-file-name obsidian-cli-backup-directory)))
+              (vault (obsidian-cli--vault))
+              ((file-directory-p vault)))
+    (unless (executable-find "zip")
+      (user-error "The %S command was not found on PATH" "zip"))
+    (make-directory dest t)
+    (let* ((vault (directory-file-name vault))
+           (parent (file-name-as-directory (file-name-directory vault)))
+           (archive (expand-file-name (format-time-string "%Y-%m-%d.zip") dest)))
+      (when (file-exists-p archive)
+        (delete-file archive))
+      (let ((default-directory parent))
+        (let ((exit (call-process "zip" nil nil t "-r" archive (file-name-nondirectory vault))))
+          (unless (zerop exit)
+            (user-error "Zip failed with exit code %d" exit))))
+      (message "Created %s" archive))))
 
 (defun obsidian-cli-jump-to-backlink ()
   "Jump to a backlink of the current file."

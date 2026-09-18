@@ -10,11 +10,13 @@ Here is how I install it:
 (use-package obsidian-cli
   :ensure t
   :vc (:url "https://github.com/leaferiksen/obsidian-cli.el")
-  :hook (markdown-ts-mode md-ts-mode)
+  :hook (markdown-ts-mode)
   :bind
-  ("C-c o" . obsidian-cli-open-note)
-  ("C-c j" . obsidian-cli-open-daily-note)
-  (:map obsidian-cli-mode-map ("C-c C-b" . obsidian-cli-jump-to-backlink))
+  (:prefix "C-c o" :prefix-map vault-actions
+	   ("s" . obsidian-cli-search-notes)
+	   ("d" . obsidian-cli-open-daily-note)
+	   ("z" . obsidian-cli-zip-vault)
+	   ("b" . obsidian-cli-jump-to-backlink))
   :custom
   (obsidian-cli-note-extensions '("md" "tsv"))
   (obsidian-cli-rename-on-save t))
