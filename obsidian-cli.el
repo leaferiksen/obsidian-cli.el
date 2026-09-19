@@ -27,25 +27,13 @@
 
 ;;; Code:
 
-(defgroup obsidian-cli nil
-  "Obsidian CLI interface."
-  :group 'external
-  :prefix "obsidian-cli-")
+(defgroup obsidian-cli nil "Obsidian CLI interface." :group 'external :prefix "obsidian-cli-")
 
-(defcustom obsidian-cli-note-extensions '("md")
-  "List of file extensions to show in the note selection menu."
-  :type '(repeat string)
-  :group 'obsidian-cli)
+(defcustom obsidian-cli-note-extensions '("md") "List of file extensions to show in the note selection menu." :type '(repeat string) :group 'obsidian-cli)
 
-(defcustom obsidian-cli-rename-on-save nil
-  "Non-nil means run `obsidian-cli-rename-file' after saving files."
-  :type 'boolean
-  :group 'obsidian-cli)
+(defcustom obsidian-cli-rename-on-save nil "Non-nil means run `obsidian-cli-rename-file' after saving files." :type 'boolean :group 'obsidian-cli)
 
-(defcustom obsidian-cli-backup-directory "~/Notes Backup/"
-  "Directory where `obsidian-cli-backup-vault' writes dated archives."
-  :type 'directory
-  :group 'obsidian-cli)
+(defcustom obsidian-cli-backup-directory "~/Notes Backup/" "Directory where `obsidian-cli-backup-vault' writes dated archives." :type 'directory :group 'obsidian-cli)
 
 (defun obsidian-cli--call (&rest args)
   "Call obsidian with ARGS and return the output string.
@@ -55,14 +43,9 @@ Signal an error if the command fails or returns a `not running' message."
            (output (string-trim (buffer-string))))
       (if (zerop exit-code)
           output
-        (user-error "Obsidian: %s"
-                    (if (string= output "")
-                        "Command failed"
-                      output))))))
+        (user-error "Obsidian: %s" (if (string= output "") "Command failed" output))))))
 
-(defun obsidian-cli--vault ()
-  "Return the vault path from the CLI."
-  (file-name-as-directory (obsidian-cli--call "vault" "info=path")))
+(defun obsidian-cli--vault () "Return the vault path from the CLI." (file-name-as-directory (obsidian-cli--call "vault" "info=path")))
 
 (defun obsidian-cli-open-daily-note ()
   "Open today's daily note.
@@ -71,7 +54,7 @@ set in Obsidian, but the template cannot currently be automatically
 added."
   (interactive)
   (let ((vault (obsidian-cli--vault))
-        (path (obsidian-cli--call "daily:path")))
+	(path (obsidian-cli--call "daily:path")))
     (find-file (expand-file-name path vault))))
 
 (defun obsidian-cli-search-notes ()
@@ -79,12 +62,13 @@ added."
 The list of included file types is `obsidian-cli-note-extensions'"
   (interactive)
   (let* ((vault (obsidian-cli--vault))
-         (files
+	 (files
           (let (acc)
             (dolist (ext obsidian-cli-note-extensions)
-              (setq acc (nconc acc (split-string (obsidian-cli--call "files" (format "ext=%s" ext)) "\n" t))))
+              (setq acc
+		    (nconc acc (split-string (obsidian-cli--call "files" (format "ext=%s" ext)) "\n" t))))
             acc))
-         (pick (completing-read "Open note: " files nil t)))
+	 (pick (completing-read "Open note: " files nil t)))
     (find-file (expand-file-name pick vault))))
 
 (defun obsidian-cli-rename-file ()
@@ -92,15 +76,15 @@ The list of included file types is `obsidian-cli-note-extensions'"
 Additionally, repair any [[wikilinks]] to the file, and navigate the
 user to the new file"
   (when-let* (obsidian-cli-rename-on-save
-              (path (buffer-file-name))
-              ((string-suffix-p ".md" path))
-              (vault (obsidian-cli--vault))
-              ((string-prefix-p vault path))
-              (new
+	      (path (buffer-file-name))
+	      ((string-suffix-p ".md" path))
+	      (vault (obsidian-cli--vault))
+	      ((string-prefix-p vault path))
+	      (new
                (save-excursion
-                 (goto-char (point-min))
-                 (and (re-search-forward "^# \\(.+\\)$" nil t) (match-string 1))))
-              ((not (string= (file-name-base path) new))))
+		 (goto-char (point-min))
+		 (and (re-search-forward "^# \\(.+\\)$" nil t) (match-string 1))))
+	      ((not (string= (file-name-base path) new))))
     (obsidian-cli--call "rename" (format "file=%s" (file-name-nondirectory path)) (format "name=%s" new))
     (set-visited-file-name (expand-file-name (concat new ".md") vault) t t)
     (set-buffer-modified-p nil)))
@@ -109,34 +93,32 @@ user to the new file"
   "Zip the Obsidian vault into a dated archive in `obsidian-cli-backup-directory'."
   (interactive)
   (when-let* ((dest (file-name-as-directory (expand-file-name obsidian-cli-backup-directory)))
-              (vault (obsidian-cli--vault))
-              ((file-directory-p vault)))
-    (unless (executable-find "zip")
-      (user-error "The %S command was not found on PATH" "zip"))
+	      (vault (obsidian-cli--vault))
+	      ((file-directory-p vault)))
+    (unless (executable-find "zip") (user-error "The %S command was not found on PATH" "zip"))
     (make-directory dest t)
     (let* ((vault (directory-file-name vault))
            (parent (file-name-as-directory (file-name-directory vault)))
            (archive (expand-file-name (format-time-string "%Y-%m-%d.zip") dest)))
-      (when (file-exists-p archive)
-        (delete-file archive))
+      (when (file-exists-p archive) (delete-file archive))
       (let ((default-directory parent))
         (let ((exit (call-process "zip" nil nil t "-r" archive (file-name-nondirectory vault))))
-          (unless (zerop exit)
-            (user-error "Zip failed with exit code %d" exit))))
+          (unless (zerop exit) (user-error "Zip failed with exit code %d" exit))))
       (message "Created %s" archive))))
 
 (defun obsidian-cli-jump-to-backlink ()
   "Jump to a backlink of the current file."
   (interactive)
   (when-let* ((vault (obsidian-cli--vault))
-              (path (buffer-file-name))
-              ((string-prefix-p vault path))
-              (raw (obsidian-cli--call "backlinks" (format "file=%s" (file-name-nondirectory path))))
-              (links (split-string raw "\n" t))
-              (pick
+	      (path (buffer-file-name))
+	      ((string-prefix-p vault path))
+	      (raw (obsidian-cli--call "backlinks" (format "file=%s" (file-name-nondirectory path))))
+	      (links (split-string raw "\n" t))
+	      (pick
                (pcase links
-                 (`(,only) only)
-                 (_ (completing-read "Backlink: " links nil t)))))
+		 (`(,only)
+		  only)
+		 (_ (completing-read "Backlink: " links nil t)))))
     (find-file (expand-file-name pick vault))))
 
 ;;;###autoload
@@ -148,9 +130,7 @@ user to the new file"
   :group 'obsidian-cli
   :keymap (make-sparse-keymap)
 
-  (if obsidian-cli-mode
-      (add-hook 'after-save-hook #'obsidian-cli-rename-file nil t)
-    (remove-hook 'after-save-hook #'obsidian-cli-rename-file t)))
+  (if obsidian-cli-mode (add-hook 'after-save-hook #'obsidian-cli-rename-file nil t) (remove-hook 'after-save-hook #'obsidian-cli-rename-file t)))
 
 (provide 'obsidian-cli)
 ;;; obsidian-cli.el ends here
