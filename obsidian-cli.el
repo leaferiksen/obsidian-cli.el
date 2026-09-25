@@ -47,6 +47,7 @@ Signal an error if the command fails or returns a `not running' message."
 
 (defun obsidian-cli--vault () "Return the vault path from the CLI." (file-name-as-directory (obsidian-cli--call "vault" "info=path")))
 
+;;;###autoload
 (defun obsidian-cli-open-daily-note ()
   "Open today's daily note.
 The parent directory and date format are derived from the preferences
@@ -57,6 +58,7 @@ added."
 	(path (obsidian-cli--call "daily:path")))
     (find-file (expand-file-name path vault))))
 
+;;;###autoload
 (defun obsidian-cli-search-notes ()
   "Open a file from the Obsidian vault.
 The list of included file types is `obsidian-cli-note-extensions'"
@@ -71,6 +73,7 @@ The list of included file types is `obsidian-cli-note-extensions'"
 	 (pick (completing-read "Open note: " files nil t)))
     (find-file (expand-file-name pick vault))))
 
+;;;###autoload
 (defun obsidian-cli-rename-file ()
   "Rename a .md file in the vault, if a level one heading is found.
 Additionally, repair any [[wikilinks]] to the file, and navigate the
@@ -89,6 +92,7 @@ user to the new file"
     (set-visited-file-name (expand-file-name (concat new ".md") vault) t t)
     (set-buffer-modified-p nil)))
 
+;;;###autoload
 (defun obsidian-cli-zip-vault ()
   "Zip the Obsidian vault into a dated archive in `obsidian-cli-backup-directory'."
   (interactive)
@@ -106,6 +110,7 @@ user to the new file"
           (unless (zerop exit) (user-error "Zip failed with exit code %d" exit))))
       (message "Created %s" archive))))
 
+;;;###autoload
 (defun obsidian-cli-jump-to-backlink ()
   "Jump to a backlink of the current file."
   (interactive)
