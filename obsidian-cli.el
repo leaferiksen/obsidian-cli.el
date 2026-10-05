@@ -1,4 +1,4 @@
-;;; obsidian-cli.el --- Obsidian CLI interface -*- lexical-binding: t -*-
+;;; obsidian-cli.el --- Obsidian CLI interface -*- lexical-binding: t; fill-column: 100; -*-
 
 ;; Copyright (C) 2026  Leaf Eriksen
 
@@ -127,19 +127,41 @@ user to the new file"
     (find-file (expand-file-name pick vault))))
 
 ;;;###autoload
+(defvar-keymap obsidian-cli-map
+  :doc "Prefix keymap for Obsidian CLI commands."
+  "s" #'obsidian-cli-search-notes
+  "d" #'obsidian-cli-open-daily-note
+  "z" #'obsidian-cli-zip-vault
+  "b" #'obsidian-cli-jump-to-backlink)
 
+;;;###autoload
+(defcustom obsidian-cli-global-prefix "C-c o"
+  "Global key sequence prefix for `obsidian-cli-map'.
+Set to nil to disable global keybindings."
+  :type '(choice (string :tag "Key prefix")
+                 (const :tag "Disabled" nil))
+  :group 'obsidian-cli
+  :set (lambda (sym val)
+         (when (and (boundp sym) (symbol-value sym))
+           (keymap-global-unset (symbol-value sym) t))
+         (set-default sym val)
+         (when val
+           (keymap-global-set val obsidian-cli-map))))
+
+;;;###autoload
+(when obsidian-cli-global-prefix
+  (keymap-global-set obsidian-cli-global-prefix obsidian-cli-map))
+
+;;;###autoload
 (define-minor-mode obsidian-cli-mode
   "Toggle Obsidian CLI integration."
   :init-value nil
   :lighter " OCLI"
   :group 'obsidian-cli
-  :keymap (make-sparse-keymap)
 
-  (if obsidian-cli-mode (add-hook 'after-save-hook #'obsidian-cli-rename-file nil t) (remove-hook 'after-save-hook #'obsidian-cli-rename-file t)))
+  (if obsidian-cli-mode
+      (add-hook 'after-save-hook #'obsidian-cli-rename-file nil t)
+    (remove-hook 'after-save-hook #'obsidian-cli-rename-file t)))
 
 (provide 'obsidian-cli)
 ;;; obsidian-cli.el ends here
-
-;; Local variables:
-;; fill-column: 1000
-;; end:

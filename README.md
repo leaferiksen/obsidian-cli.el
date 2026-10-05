@@ -2,24 +2,23 @@
 
 Access the power of the Obsidian CLI from within GNU Emacs!
 
-Here is how I install it:
-
 ```elisp
 (setopt use-package-vc-prefer-newest t)
+```
+`package-vc-install` `https://github.com/leaferiksen/obsidian-cli.el`
 
-(use-package obsidian-cli
-  :ensure t
-  :vc (:url "https://github.com/leaferiksen/obsidian-cli.el")
-  :hook (markdown-ts-mode)
-  :bind
-  (:prefix "C-c o" :prefix-map obsidian-cli-actions
-	   ("s" . obsidian-cli-search-notes)
-	   ("d" . obsidian-cli-open-daily-note)
-	   ("z" . obsidian-cli-zip-vault)
-	   ("b" . obsidian-cli-jump-to-backlink))
-  :custom
-  (obsidian-cli-note-extensions '("md" "tsv"))
-  (obsidian-cli-rename-on-save t))
+optional goodies:
+
+```elisp
+(add-hook 'markdown-ts-mode-hook #'obsidian-cli-mode)
+;; Synchronize file names with titles.
+(setopt obsidian-cli-rename-on-save t)
+;; File types you want to search for
+(setopt obsidian-cli-note-extensions '("md" "tsv"))
+;; Change the global key prefix
+(setopt obsidian-cli-global-prefix "C-c N")
+;; Or disable global keybindings entirely
+(setopt obsidian-cli-global-prefix nil)
 ```
 
 The CLI only provides the path to the vault that is currently open. If multiple vaults are open at once, the CLI only sees the path of the first vault that was opened. If multi-vault path support is added to the CLI, please tell me about it, because I would be happy to support the feature, even though I don't need it.
